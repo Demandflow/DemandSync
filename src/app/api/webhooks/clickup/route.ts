@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import prisma from '@/lib/prisma/client'
+import { store } from '@/lib/memory-store'
 import { io } from '@/lib/socket'
 
 // Verify webhook signature
@@ -21,12 +21,8 @@ export async function POST(request: Request) {
         const event = JSON.parse(body)
         const { task_id, history_items } = event
 
-        // Find the task in our database using ClickUp task ID
-        const task = await prisma.task.findFirst({
-            where: { clickupTaskId: task_id },
-            include: { organization: true },
-        })
-
+        // Find the task in our store
+        const task = await store.getTask(task_id)
         if (!task) {
             return new NextResponse('Task not found', { status: 404 })
         }
@@ -35,29 +31,21 @@ export async function POST(request: Request) {
         for (const item of history_items) {
             switch (item.field) {
                 case 'status':
-                    await prisma.task.update({
-                        where: { id: task.id },
-                        data: { status: item.after.status },
-                    })
+                    await store.updateTask(task.id, { status: item.after.status })
                     // Emit real-time update
-                    io.to(`org_${task.organizationId}`).emit('task:update', {
+                    io.emit('task:update', {
                         id: task.id,
                         status: item.after.status,
                     })
                     break
 
                 case 'content':
-                    await prisma.task.update({
-                        where: { id: task.id },
-                        data: { description: item.after.content },
-                    })
-                    io.to(`org_${task.organizationId}`).emit('task:update', {
+                    await store.updateTask(task.id, { description: item.after.content })
+                    io.emit('task:update', {
                         id: task.id,
                         description: item.after.content,
                     })
                     break
-
-                // Add more cases for other field updates
             }
         }
 

@@ -1,16 +1,29 @@
 import { Server } from 'socket.io'
-import { createServer } from 'http'
 import { auth } from '@clerk/nextjs'
-import prisma from './prisma/client'
 
-// Initialize Socket.io server
-const httpServer = createServer()
-export const io = new Server(httpServer, {
-    cors: {
-        origin: process.env.NEXT_PUBLIC_APP_URL,
-        methods: ['GET', 'POST'],
-    },
-})
+let io: Server
+
+if (process.env.NODE_ENV !== 'production') {
+    // In development, create a new instance if it doesn't exist
+    if (!global.io) {
+        global.io = new Server({
+            cors: {
+                origin: process.env.NEXT_PUBLIC_APP_URL,
+                methods: ['GET', 'POST'],
+            },
+        })
+        global.io.listen(parseInt(process.env.SOCKET_PORT || '3001'))
+    }
+    io = global.io
+} else {
+    // In production (Vercel), we don't need to create a server
+    io = new Server({
+        cors: {
+            origin: process.env.NEXT_PUBLIC_APP_URL,
+            methods: ['GET', 'POST'],
+        },
+    })
+}
 
 // Authentication middleware
 io.use(async (socket, next) => {
@@ -19,29 +32,12 @@ io.use(async (socket, next) => {
         if (!userId) {
             return next(new Error('Unauthorized'))
         }
-
-        // Get user's organization
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            include: { organization: true },
-        })
-
-        if (!user) {
-            return next(new Error('User not found'))
-        }
-
-        // Join organization's room
-        socket.join(`org_${user.organizationId}`)
+        // Join user's room
+        socket.join(`user_${userId}`)
         next()
     } catch (error) {
         next(new Error('Authentication failed'))
     }
 })
 
-// Start server if not already running
-if (!global.socketServer) {
-    httpServer.listen(process.env.SOCKET_PORT || 3001)
-    global.socketServer = httpServer
-}
-
-export default io 
+export { io } 
