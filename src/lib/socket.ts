@@ -1,6 +1,10 @@
 import { Server } from 'socket.io'
 import { auth } from '@clerk/nextjs'
 
+declare global {
+    var io: Server | undefined
+}
+
 let io: Server
 
 if (process.env.NODE_ENV !== 'production') {
@@ -14,7 +18,7 @@ if (process.env.NODE_ENV !== 'production') {
         })
         global.io.listen(parseInt(process.env.SOCKET_PORT || '3001'))
     }
-    io = global.io
+    io = global.io as Server
 } else {
     // In production (Vercel), we don't need to create a server
     io = new Server({
