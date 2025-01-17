@@ -12,8 +12,17 @@ interface KanbanCardProps {
 export default function KanbanCard({ task, index, onTaskClick }: KanbanCardProps) {
   return (
     <div
+      style={{
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        padding: '12px',
+        marginBottom: '8px',
+        cursor: 'grab',
+        border: '1px solid #e5e7eb',
+        userSelect: 'none'
+      }}
+      className="task-card hover:bg-gray-50 transition-all duration-200"
       onClick={() => onTaskClick?.(task)}
-      className="bg-white rounded-lg shadow-[0_2px_4px_rgba(0,0,0,0.05)] p-3 mb-2 cursor-pointer hover:shadow-[0_4px_8px_rgba(0,0,0,0.1)] transition-shadow duration-200"
     >
       <div className="flex flex-col gap-2">
         <div className="flex items-start justify-between">
@@ -41,19 +50,11 @@ export default function KanbanCard({ task, index, onTaskClick }: KanbanCardProps
 
         <div className="flex items-center justify-between text-xs text-gray-500">
           {task.dueDate && (
-            <span className="flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              {new Date(task.dueDate).toLocaleDateString()}
-            </span>
+            <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
           )}
           {task.subtasks && task.subtasks.length > 0 && (
-            <span className="flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}
+            <span>
+              {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtasks
             </span>
           )}
         </div>

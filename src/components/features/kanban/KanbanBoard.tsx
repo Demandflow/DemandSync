@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { DragDropContext, Droppable, DropResult, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, DropResult, Draggable } from '@hello-pangea/dnd';
 import KanbanCard from './KanbanCard';
 import { TaskDetailModal } from '../tasks/TaskDetailModal';
 import type { TaskWithRelations, KanbanColumn } from '@/lib/task-manager';
@@ -37,16 +37,30 @@ function NewTaskCard({ onSave, onCancel }: NewTaskCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-[0_2px_4px_rgba(0,0,0,0.05)] p-3 mb-2">
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Type a name..."
-        className="w-full bg-transparent border-none outline-none text-sm"
-        autoFocus
-      />
+    <div
+      style={{
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        padding: '12px',
+        marginBottom: '8px',
+        cursor: 'text',
+        border: '1px solid #e5e7eb'
+      }}
+      className="task-card hover:bg-gray-50 transition-colors duration-200"
+    >
+      <div className="flex flex-col gap-2">
+        <div className="flex items-start justify-between">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a name..."
+            className="text-sm font-medium text-gray-900 line-clamp-2 w-full bg-transparent border-0 outline-none focus:ring-0 p-0"
+            autoFocus
+          />
+        </div>
+      </div>
     </div>
   );
 }
