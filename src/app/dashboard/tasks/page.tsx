@@ -1,64 +1,87 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import KanbanBoard from '@/components/KanbanBoard'
+import { getTasks, createTask, updateTaskStatus } from '@/lib/task-manager'
+import type { TaskWithRelations, KanbanColumn } from '@/lib/task-manager'
 
-interface Task {
-    id: string
-    title: string
-    description: string
-    status: 'todo' | 'in_progress' | 'in_review' | 'done'
-}
+const MOCK_ORG_ID = 'cm60gyvte0000m4lbvz178mmj'
 
 export default function TasksPage() {
-    const [tasks, setTasks] = useState<Task[]>([])
+    const [tasks, setTasks] = useState<TaskWithRelations[]>([])
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
-        const fetchTasks = async () => {
-            try {
-                const response = await fetch('/api/tasks')
-                const data = await response.json()
-                setTasks(data)
-            } catch (error) {
-                console.error('Failed to fetch tasks:', error)
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        fetchTasks()
+        loadTasks()
     }, [])
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-                <div className="text-sm text-gray-500">Loading tasks...</div>
-            </div>
-        )
+    async function loadTasks() {
+        try {
+            const fetchedTasks = await getTasks(MOCK_ORG_ID)
+            setTasks(fetchedTasks)
+            setLoading(false)
+        } catch (err) {
+            console.error('Error loading tasks:', err)
+            setError('Failed to load tasks')
+            setLoading(false)
+        }
     }
 
+    async function handleTaskMove(taskId: string, newStatus: KanbanColumn) {
+        try {
+            // Optimistically update the UI
+            setTasks(prevTasks =>
+                prevTasks.map(task =>
+                    task.id === taskId
+                        ? { ...task, status: newStatus }
+                        : task
+                )
+            )
+
+            // Update in the backend
+            await updateTaskStatus(taskId, newStatus)
+        } catch (err) {
+            console.error('Error moving task:', err)
+            setError('Failed to move task')
+            // Revert the optimistic update by reloading tasks
+            await loadTasks()
+        }
+    }
+
+    async function handleTaskCreate(data: {
+        title: string;
+        description: string;
+        status: KanbanColumn;
+        organizationId: string;
+    }) {
+        try {
+            // Create the task
+            const newTask = await createTask({
+                title: data.title,
+                description: data.description,
+                status: data.status,
+                organizationId: data.organizationId,
+            })
+
+            // Update the UI
+            setTasks(prevTasks => [...prevTasks, newTask])
+        } catch (err) {
+            console.error('Error creating task:', err)
+            setError('Failed to create task')
+        }
+    }
+
+    if (loading) return <div className="p-4">Loading...</div>
+    if (error) return <div className="p-4 text-red-500">Error: {error}</div>
+
     return (
-        <div className="h-[calc(100vh-4rem)]">
-            <div className="flex justify-between items-center py-4 px-6 border-b">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-xl font-semibold text-gray-900">Master Database</h1>
-                    <button className="text-sm text-gray-500 hover:text-gray-900">
-                        Board view
-                    </button>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 bg-blue-600 text-white"
-                        onClick={() => {
-                            // TODO: Implement new task creation
-                        }}
-                    >
-                        New
-                    </button>
-                </div>
-            </div>
-            <KanbanBoard initialTasks={tasks} />
+        <div className="p-4">
+            <KanbanBoard
+                tasks={tasks}
+                onTaskMove={handleTaskMove}
+                onTaskCreate={handleTaskCreate}
+            />
         </div>
     )
 } 

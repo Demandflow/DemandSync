@@ -1,26 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-:root {
-    --foreground-rgb: 0, 0, 0;
-    --background-start-rgb: 214, 219, 220;
-    --background-end-rgb: 255, 255, 255;
-}
-
-body {
-    color: rgb(var(--foreground-rgb));
-    background: rgb(var(--background-end-rgb));
-    height: 100vh;
-}
-
 .kanban-board {
     display: flex;
     gap: 24px;
     padding: 24px;
     overflow-x: auto;
-    min-height: calc(100vh - 200px);
-    height: 100%;
 }
 
 .kanban-column {
@@ -28,11 +10,6 @@ body {
     background: #f8f9fa;
     border-radius: 8px;
     padding: 16px;
-    margin: 0 8px;
-    height: fit-content;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
 }
 
 .kanban-column-header {
@@ -56,62 +33,12 @@ body {
     color: #495057;
 }
 
-.kanban-cards {
-    min-height: 200px;
-    padding: 8px;
-    transition: background-color 0.2s ease;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.kanban-cards.dragging-over {
-    background-color: rgba(0, 0, 0, 0.04);
-    border-radius: 8px;
-}
-
 .kanban-card {
     background: white;
     border-radius: 8px;
     padding: 16px;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    user-select: none;
-    cursor: grab;
-    transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.kanban-card input {
-    cursor: text;
-    font-size: 14px;
-    font-weight: 500;
-    color: #1e1e1e;
-    width: 100%;
-    padding: 0;
-    margin: 0;
-}
-
-.kanban-card input::placeholder {
-    color: #6c757d;
-    opacity: 0.8;
-}
-
-.kanban-card:hover {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
-}
-
-.kanban-card:active {
-    cursor: grabbing;
-}
-
-.kanban-card.dragging {
-    transform: scale(1.02) rotate(1deg);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-    background: white;
-    opacity: 0.9;
 }
 
 .card-title {
@@ -162,7 +89,6 @@ body {
     font-size: 13px;
     cursor: pointer;
     transition: all 0.2s;
-    margin-top: 8px;
 }
 
 .add-task-button:hover {
@@ -187,26 +113,18 @@ body {
     background: #f8f9fa;
 }
 
-/* Drag and drop styles */
 .kanban-cards {
-    min-height: 200px;
-    padding: 8px;
+    min-height: 100px;
     transition: background-color 0.2s ease;
 }
 
 .kanban-cards.dragging-over {
-    background-color: rgba(0, 0, 0, 0.04);
-    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.02);
 }
 
 .kanban-card {
     cursor: grab;
-    transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.kanban-card:hover {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .kanban-card:active {
@@ -214,6 +132,23 @@ body {
 }
 
 .kanban-card.dragging {
-    transform: scale(1.02) rotate(1deg);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    transform: scale(1.02);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Smooth animations for drag and drop */
+.kanban-card {
+    animation: card-enter 0.2s ease;
+}
+
+@keyframes card-enter {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { store } from '@/lib/memory-store'
+import type { TaskWithRelations } from '@/lib/task-manager'
 
 // Temporary user data for development
 const MOCK_USER = {
@@ -25,6 +26,23 @@ export async function GET(
 }
 
 export async function PUT(
+    request: Request,
+    { params }: { params: { taskId: string } }
+) {
+    try {
+        const updates = await request.json()
+        const task = await store.updateTask(params.taskId, updates)
+        if (!task) {
+            return new NextResponse('Task not found', { status: 404 })
+        }
+        return NextResponse.json(task)
+    } catch (error) {
+        console.error('Error updating task:', error)
+        return new NextResponse('Internal Server Error', { status: 500 })
+    }
+}
+
+export async function PATCH(
     request: Request,
     { params }: { params: { taskId: string } }
 ) {

@@ -10,6 +10,8 @@
     },
     "dependencies": {
         "@clerk/nextjs": "^4.29.0",
+        "@emotion/react": "^11.14.0",
+        "@emotion/styled": "^11.14.0",
         "@headlessui/react": "^2.2.0",
         "@hello-pangea/dnd": "^17.0.0",
         "@prisma/client": "^5.7.0",
@@ -17,6 +19,7 @@
         "@types/react-beautiful-dnd": "^13.1.8",
         "next": "14.0.4",
         "react": "^18.2.0",
+        "react-beautiful-dnd": "^13.1.1",
         "react-dom": "^18.2.0",
         "socket.io": "^4.7.2",
         "socket.io-client": "^4.7.2",

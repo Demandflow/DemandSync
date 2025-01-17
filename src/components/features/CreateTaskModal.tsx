@@ -1,13 +1,22 @@
+'use client';
+
 import React, { useState } from 'react'
 import { Dialog } from '@headlessui/react'
+import type { KanbanColumn } from '@/lib/task-manager'
 
 interface CreateTaskModalProps {
     isOpen: boolean
     onClose: () => void
-    onSubmit: (task: { title: string; description: string }) => Promise<void>
+    onCreateTask: (data: {
+        title: string
+        description: string
+        status: KanbanColumn
+        organizationId: string
+    }) => void
+    columnId: KanbanColumn
 }
 
-export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalProps) {
+export function CreateTaskModal({ isOpen, onClose, onCreateTask, columnId }: CreateTaskModalProps) {
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
     const [loading, setLoading] = useState(false)
@@ -18,7 +27,12 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
 
         try {
             setLoading(true)
-            await onSubmit({ title, description })
+            onCreateTask({
+                title,
+                description,
+                status: columnId,
+                organizationId: 'cm60gyvte0000m4lbvz178mmj', // Using the mock org ID
+            })
             setTitle('')
             setDescription('')
             onClose()

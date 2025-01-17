@@ -1,193 +1,163 @@
-'use client'
+'use client';
 
-import React, { useState } from 'react'
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
-
-interface Task {
-    id: string
-    title: string
-    description: string
-    status: 'todo' | 'in_progress' | 'in_review' | 'done'
-}
-
-interface Column {
-    id: string
-    title: string
-    taskIds: string[]
-}
+import React, { useState } from 'react';
+import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
+import KanbanCard from './KanbanCard';
+import { TaskDetailModal } from './features/TaskDetailModal';
+import type { TaskWithRelations, KanbanColumn } from '@/lib/task-manager';
 
 interface KanbanBoardProps {
-    initialTasks: Task[]
+  tasks: TaskWithRelations[];
+  onTaskMove?: (taskId: string, newStatus: KanbanColumn) => void;
+  onTaskCreate?: (data: {
+    title: string;
+    description: string;
+    status: KanbanColumn;
+    organizationId: string;
+  }) => void;
 }
 
-const columnTitles = {
-    todo: 'Backlog',
-    in_progress: 'Working on',
-    in_review: 'Blocked',
-    done: 'Complete'
+const COLUMN_TITLES = {
+  'TO DO': 'todo' as const,
+  'WORKING ON': 'in_progress' as const,
+  'FOR REVIEW': 'in_review' as const,
+  'COMPLETE': 'done' as const,
+};
+
+interface NewTaskCardProps {
+  onSave: (title: string) => void;
+  onCancel: () => void;
 }
 
-export default function KanbanBoard({ initialTasks }: KanbanBoardProps) {
-    const [tasks, setTasks] = useState<{ [key: string]: Task }>(
-        initialTasks.reduce((acc, task) => ({ ...acc, [task.id]: task }), {})
-    )
+function NewTaskCard({ onSave, onCancel }: NewTaskCardProps) {
+  const [title, setTitle] = useState('');
 
-    const [columns, setColumns] = useState<{ [key: string]: Column }>({
-        todo: {
-            id: 'todo',
-            title: columnTitles.todo,
-            taskIds: initialTasks.filter(t => t.status === 'todo').map(t => t.id)
-        },
-        in_progress: {
-            id: 'in_progress',
-            title: columnTitles.in_progress,
-            taskIds: initialTasks.filter(t => t.status === 'in_progress').map(t => t.id)
-        },
-        in_review: {
-            id: 'in_review',
-            title: columnTitles.in_review,
-            taskIds: initialTasks.filter(t => t.status === 'in_review').map(t => t.id)
-        },
-        done: {
-            id: 'done',
-            title: columnTitles.done,
-            taskIds: initialTasks.filter(t => t.status === 'done').map(t => t.id)
-        }
-    })
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && title.trim()) {
+      e.preventDefault();
+      onSave(title);
+    } else if (e.key === 'Escape') {
+      onCancel();
+    }
+  };
 
-    const [columnOrder] = useState(['todo', 'in_progress', 'in_review', 'done'])
+  return (
+    <div className="kanban-card">
+      <input
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Type a name..."
+        className="w-full bg-transparent border-none outline-none text-sm"
+        autoFocus
+      />
+    </div>
+  );
+}
 
-    const onDragEnd = (result: any) => {
-        const { destination, source, draggableId } = result
+export default function KanbanBoard({ tasks, onTaskMove, onTaskCreate }: KanbanBoardProps) {
+  const [addingInColumn, setAddingInColumn] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null);
 
-        if (!destination) return
+  // Group tasks by status
+  const columns = {
+    'TO DO': tasks.filter(task => task.status === 'todo' || !task.status),
+    'WORKING ON': tasks.filter(task => task.status === 'in_progress'),
+    'FOR REVIEW': tasks.filter(task => task.status === 'in_review'),
+    'COMPLETE': tasks.filter(task => task.status === 'done')
+  };
 
-        if (
-            destination.droppableId === source.droppableId &&
-            destination.index === source.index
-        ) {
-            return
-        }
+  const onDragEnd = (result: DropResult) => {
+    const { source, destination, draggableId } = result;
 
-        const start = columns[source.droppableId]
-        const finish = columns[destination.droppableId]
-
-        if (start === finish) {
-            const newTaskIds = Array.from(start.taskIds)
-            newTaskIds.splice(source.index, 1)
-            newTaskIds.splice(destination.index, 0, draggableId)
-
-            const newColumn = {
-                ...start,
-                taskIds: newTaskIds
-            }
-
-            setColumns({
-                ...columns,
-                [newColumn.id]: newColumn
-            })
-            return
-        }
-
-        // Moving from one list to another
-        const startTaskIds = Array.from(start.taskIds)
-        startTaskIds.splice(source.index, 1)
-        const newStart = {
-            ...start,
-            taskIds: startTaskIds
-        }
-
-        const finishTaskIds = Array.from(finish.taskIds)
-        finishTaskIds.splice(destination.index, 0, draggableId)
-        const newFinish = {
-            ...finish,
-            taskIds: finishTaskIds
-        }
-
-        // Update task status
-        const updatedTask = {
-            ...tasks[draggableId],
-            status: destination.droppableId as Task['status']
-        }
-
-        setColumns({
-            ...columns,
-            [newStart.id]: newStart,
-            [newFinish.id]: newFinish
-        })
-
-        setTasks({
-            ...tasks,
-            [draggableId]: updatedTask
-        })
+    if (!destination ||
+      (destination.droppableId === source.droppableId &&
+        destination.index === source.index)) {
+      return;
     }
 
-    return (
-        <DragDropContext onDragEnd={onDragEnd}>
-            <div className="flex gap-6 p-6 overflow-x-auto min-h-[calc(100vh-10rem)]">
-                {columnOrder.map(columnId => {
-                    const column = columns[columnId]
-                    const columnTasks = column.taskIds.map(taskId => tasks[taskId])
+    const newStatus = COLUMN_TITLES[destination.droppableId as keyof typeof COLUMN_TITLES];
+    console.log('Moving task:', { draggableId, newStatus, source, destination });
 
-                    return (
-                        <div key={column.id} className="flex-shrink-0 w-80">
-                            <div className="rounded-lg">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <span className="w-2 h-2 rounded-full bg-gray-400"></span>
-                                        <h3 className="font-medium text-sm text-gray-700">
-                                            {column.title}
-                                        </h3>
-                                    </div>
-                                    <span className="text-sm text-gray-500">
-                                        {columnTasks.length}
-                                    </span>
-                                </div>
-                                <Droppable droppableId={column.id}>
-                                    {(provided, snapshot) => (
-                                        <div
-                                            ref={provided.innerRef}
-                                            {...provided.droppableProps}
-                                            className={`min-h-[8rem] transition-colors ${snapshot.isDraggingOver ? 'bg-gray-50' : ''
-                                                }`}
-                                        >
-                                            {columnTasks.map((task, index) => (
-                                                <Draggable
-                                                    key={task.id}
-                                                    draggableId={task.id}
-                                                    index={index}
-                                                >
-                                                    {(provided, snapshot) => (
-                                                        <div
-                                                            ref={provided.innerRef}
-                                                            {...provided.draggableProps}
-                                                            {...provided.dragHandleProps}
-                                                            className={`bg-white p-3 mb-2 rounded border border-gray-200 hover:border-gray-300 ${snapshot.isDragging
-                                                                ? 'shadow-lg'
-                                                                : ''
-                                                                }`}
-                                                        >
-                                                            <h4 className="text-sm font-medium text-gray-900">
-                                                                {task.title}
-                                                            </h4>
-                                                            {task.description && (
-                                                                <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                                                                    {task.description}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </Draggable>
-                                            ))}
-                                            {provided.placeholder}
-                                        </div>
-                                    )}
-                                </Droppable>
-                            </div>
-                        </div>
-                    )
-                })}
+    if (onTaskMove) {
+      onTaskMove(draggableId, newStatus);
+    }
+  };
+
+  const handleAddTask = (columnTitle: string) => {
+    setAddingInColumn(columnTitle);
+  };
+
+  const handleSaveNewTask = (columnTitle: string, title: string) => {
+    if (onTaskCreate) {
+      onTaskCreate({
+        title,
+        description: '',
+        status: COLUMN_TITLES[columnTitle as keyof typeof COLUMN_TITLES],
+        organizationId: 'cm60gyvte0000m4lbvz178mmj', // Using the mock org ID
+      });
+    }
+    setAddingInColumn(null);
+  };
+
+  const handleTaskClick = (task: TaskWithRelations) => {
+    setSelectedTask(task);
+  };
+
+  return (
+    <div className="h-full">
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="kanban-board">
+          {Object.entries(columns).map(([columnTitle, columnTasks]) => (
+            <div key={columnTitle} className={`kanban-column column-${columnTitle.toLowerCase().replace(/\s+/g, '-')}`}>
+              <div className="kanban-column-header">
+                <span className="column-title">{columnTitle}</span>
+                <span className="task-count">{columnTasks.length}</span>
+              </div>
+
+              <Droppable droppableId={columnTitle}>
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`kanban-cards ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
+                  >
+                    {columnTasks.map((task, index) => (
+                      <KanbanCard
+                        key={task.id}
+                        task={task}
+                        index={index}
+                        onTaskClick={handleTaskClick}
+                      />
+                    ))}
+                    {addingInColumn === columnTitle && (
+                      <NewTaskCard
+                        onSave={(title) => handleSaveNewTask(columnTitle, title)}
+                        onCancel={() => setAddingInColumn(null)}
+                      />
+                    )}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+
+              <button
+                className="add-task-button"
+                onClick={() => handleAddTask(columnTitle)}
+              >
+                + Add Task
+              </button>
             </div>
-        </DragDropContext>
-    )
+          ))}
+        </div>
+      </DragDropContext>
+
+      <TaskDetailModal
+        task={selectedTask!}
+        isOpen={!!selectedTask}
+        onClose={() => setSelectedTask(null)}
+      />
+    </div>
+  );
 } 

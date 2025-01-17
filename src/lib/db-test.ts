@@ -1,10 +1,13 @@
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({
+    log: ['query', 'error', 'warn'],
+})
 
 async function main() {
     try {
         // Create a test organization
+        console.log('Creating test organization...')
         const org = await prisma.organization.create({
             data: {
                 name: 'Test Organization',
@@ -13,10 +16,12 @@ async function main() {
         })
         console.log('Created organization:', org)
 
-        // Create a test user
+        // Create a test user with a unique email
+        console.log('Creating test user...')
+        const uniqueEmail = `test-${Date.now()}@example.com`
         const user = await prisma.user.create({
             data: {
-                email: 'test@example.com',
+                email: uniqueEmail,
                 role: 'ADMIN',
                 organizationId: org.id,
             },
@@ -24,41 +29,27 @@ async function main() {
         console.log('Created user:', user)
 
         // Create a test task
+        console.log('Creating test task...')
         const task = await prisma.task.create({
             data: {
                 title: 'Test Task',
                 description: 'This is a test task',
                 status: 'todo',
-                clickupTaskId: 'test-task-1',
+                clickupTaskId: `test-task-${Date.now()}`,
                 organizationId: org.id,
             },
         })
         console.log('Created task:', task)
 
-        // Add a comment to the task
-        const comment = await prisma.comment.create({
-            data: {
-                content: 'Test comment',
-                taskId: task.id,
-                userId: user.id,
-                clickupCommentId: 'test-comment-1',
-            },
-        })
-        console.log('Created comment:', comment)
-
-        // Fetch task with relations
-        const taskWithRelations = await prisma.task.findUnique({
-            where: { id: task.id },
+        // Verify we can fetch the task
+        console.log('Fetching tasks...')
+        const tasks = await prisma.task.findMany({
+            where: { organizationId: org.id },
             include: {
                 organization: true,
-                comments: {
-                    include: {
-                        user: true,
-                    },
-                },
             },
         })
-        console.log('Retrieved task with relations:', taskWithRelations)
+        console.log('Retrieved tasks:', tasks)
 
     } catch (error) {
         console.error('Error:', error)
