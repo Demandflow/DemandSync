@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { TaskWithRelations } from '@/lib/task-manager';
-import { Calendar, Clock, Plus, MoreHorizontal, Search, X, Star, Maximize2, Send } from 'lucide-react';
+import { X, Send, Calendar, Users, Flag } from 'lucide-react';
 
 interface TaskDetailModalProps {
     taskId: string | null;
@@ -14,9 +14,9 @@ interface TaskDetailModalProps {
 
 export function TaskDetailModal({ taskId, isOpen, onClose, onUpdate }: TaskDetailModalProps) {
     const [mounted, setMounted] = useState(false);
-    const [activeTab, setActiveTab] = useState('details');
     const [task, setTask] = useState<TaskWithRelations | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [comment, setComment] = useState('');
 
     useEffect(() => {
         setMounted(true);
@@ -25,105 +25,160 @@ export function TaskDetailModal({ taskId, isOpen, onClose, onUpdate }: TaskDetai
 
     useEffect(() => {
         if (taskId && isOpen) {
-            fetchTaskDetails();
+            setLoading(true);
+            fetch(`/api/tasks/${taskId}`)
+                .then(res => res.json())
+                .then(data => {
+                    setTask(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching task:', error);
+                })
+                .finally(() => {
+                    setLoading(false);
+                });
+        } else {
+            setTask(null);
         }
     }, [taskId, isOpen]);
 
-    const fetchTaskDetails = async () => {
-        if (!taskId) return;
-        try {
-            setLoading(true);
-            const response = await fetch(`/api/tasks/${taskId}`);
-            const data = await response.json();
-            setTask(data);
-        } catch (error) {
-            console.error('Error fetching task details:', error);
-        } finally {
-            setLoading(false);
-        }
+    const handleCommentSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        // TODO: Implement comment submission
+        setComment('');
     };
 
-    if (!isOpen || !mounted) return null;
+    if (!mounted || typeof window === 'undefined' || !isOpen) return null;
 
-    const modalContent = (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg shadow-xl w-11/12 max-w-6xl max-h-[90vh] flex flex-col">
-                {/* Top Navigation Bar */}
-                <nav className="border-b px-4 py-2 flex items-center justify-between rounded-t-lg">
-                    <div className="flex items-center space-x-4">
-                        <span className="text-sm">Task Board</span>
-                        <span className="text-sm text-gray-500">Task Details</span>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                        <button className="px-3 py-1 bg-emerald-500 text-white rounded-md text-sm">Share</button>
-                        <div className="flex items-center space-x-2">
-                            <Star className="text-gray-500" size={16} />
-                            <Maximize2 className="text-gray-500" size={16} />
-                            <button onClick={onClose}>
-                                <X className="text-gray-500" size={16} />
-                            </button>
-                        </div>
-                    </div>
-                </nav>
+    return createPortal(
+        <div className="fixed inset-0 z-50">
+            <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
-                {/* Main Content Area */}
-                <div className="flex flex-1 overflow-hidden">
-                    {loading ? (
-                        <div className="flex-1 p-6 flex items-center justify-center">
-                            <p className="text-gray-500">Loading task details...</p>
-                        </div>
-                    ) : task ? (
-                        /* Left Side - Task Details */
-                        <div className="flex-1 p-6 overflow-y-auto">
-                            <div className="flex items-center space-x-2 mb-6">
-                                <h1 className="text-xl font-semibold">{task.title}</h1>
+            <div className="absolute inset-0 overflow-hidden">
+                <div className="min-h-full flex items-center justify-center p-4">
+                    <div className="relative bg-white rounded-xl w-[65vw] shadow-2xl flex h-[60vh]">
+                        {/* Main Content */}
+                        <div className="w-2/3 border-r border-gray-200 flex flex-col">
+                            {/* Header */}
+                            <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
+                                <h2 className="text-2xl font-display font-semibold text-gray-900">
+                                    {loading ? 'Loading...' : task?.title}
+                                </h2>
+                                <button
+                                    onClick={onClose}
+                                    className="text-gray-400 hover:text-gray-500 p-2 rounded-full hover:bg-gray-100 transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
                             </div>
-                            <div className="space-y-6">
-                                <div>
-                                    <h3 className="text-sm font-medium text-gray-900 mb-2">Description</h3>
-                                    <p className="text-gray-600">{task.description || 'No description provided.'}</p>
+
+                            {/* Content */}
+                            {loading ? (
+                                <div className="p-6 flex justify-center">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-900 border-t-transparent"></div>
                                 </div>
-                                {task.assignees && task.assignees.length > 0 && (
-                                    <div>
-                                        <h3 className="text-sm font-medium text-gray-900 mb-2">Assignees</h3>
-                                        <div className="flex flex-wrap gap-2">
-                                            {task.assignees.map(assignee => (
-                                                <span
-                                                    key={assignee.id}
-                                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                                                >
-                                                    {assignee.name}
-                                                </span>
-                                            ))}
+                            ) : task ? (
+                                <div className="p-6 space-y-8 flex-1 overflow-y-auto">
+                                    {/* Metadata Grid */}
+                                    <div className="grid grid-cols-3 gap-6">
+                                        {/* Status */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Flag className="w-4 h-4 text-gray-400" />
+                                                <h3 className="text-sm font-display font-semibold text-gray-500">Status</h3>
+                                            </div>
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-base font-medium bg-green-100 text-green-800">
+                                                {task.status}
+                                            </span>
+                                        </div>
+
+                                        {/* Assignees */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Users className="w-4 h-4 text-gray-400" />
+                                                <h3 className="text-sm font-display font-semibold text-gray-500">Assignees</h3>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {task.assignees?.map((assignee) => (
+                                                    <div key={assignee.id} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-base">
+                                                        {assignee.name}
+                                                    </div>
+                                                ))}
+                                                {(!task.assignees || task.assignees.length === 0) && (
+                                                    <span className="text-base text-gray-500">No assignees</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Due Date */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Calendar className="w-4 h-4 text-gray-400" />
+                                                <h3 className="text-sm font-display font-semibold text-gray-500">Due Date</h3>
+                                            </div>
+                                            <span className="text-base text-gray-600">
+                                                {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}
+                                            </span>
                                         </div>
                                     </div>
-                                )}
-                                {task.comments && task.comments.length > 0 && (
-                                    <div>
-                                        <h3 className="text-sm font-medium text-gray-900 mb-2">Comments</h3>
-                                        <div className="space-y-4">
-                                            {task.comments.map(comment => (
-                                                <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
-                                                    <p className="text-sm text-gray-600">{comment.content}</p>
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        {new Date(comment.createdAt).toLocaleString()}
-                                                    </p>
-                                                </div>
-                                            ))}
+
+                                    {/* Description */}
+                                    <div className="space-y-3 flex-grow">
+                                        <h3 className="text-sm font-display font-semibold text-gray-500">Description</h3>
+                                        <div className="bg-gray-50 rounded-lg p-6 min-h-[200px]">
+                                            <p className="text-base text-gray-600 whitespace-pre-wrap font-regular">
+                                                {task.description || 'No description provided.'}
+                                            </p>
                                         </div>
                                     </div>
-                                )}
+                                </div>
+                            ) : null}
+                        </div>
+
+                        {/* Comments Section */}
+                        <div className="w-1/3 flex flex-col">
+                            <div className="border-b border-gray-200 px-6 py-4 flex-shrink-0">
+                                <h3 className="font-display font-semibold">Activity</h3>
+                            </div>
+                            <div className="flex-1 p-6 space-y-4 overflow-y-auto">
+                                {task?.comments?.map((comment) => (
+                                    <div key={comment.id} className="flex gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                            {comment.user?.email.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-base font-display font-semibold">{comment.user?.email}</span>
+                                                <span className="text-sm text-gray-500">2h ago</span>
+                                            </div>
+                                            <p className="text-base text-gray-700 font-regular">{comment.content}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="border-t border-gray-200 p-4 flex-shrink-0">
+                                <form onSubmit={handleCommentSubmit} className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={comment}
+                                        onChange={(e) => setComment(e.target.value)}
+                                        placeholder="Write a comment..."
+                                        className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 font-regular"
+                                    />
+                                    <button
+                                        type="submit"
+                                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                        disabled={!comment.trim()}
+                                    >
+                                        <Send className="w-4 h-4 text-gray-500" />
+                                    </button>
+                                </form>
                             </div>
                         </div>
-                    ) : (
-                        <div className="flex-1 p-6 flex items-center justify-center">
-                            <p className="text-gray-500">Task not found</p>
-                        </div>
-                    )}
+                    </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
-
-    return createPortal(modalContent, document.body);
 } 
