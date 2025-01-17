@@ -1,18 +1,27 @@
-import type { Task } from '@prisma/client'
-import { JsonValue } from '@prisma/client/runtime/library'
+import { type JsonValue } from '@prisma/client/runtime/library'
 
 export type KanbanColumn = 'todo' | 'in_progress' | 'in_review' | 'done'
 
-interface Assignee {
+export interface Assignee {
     id: string;
     name: string;
     email: string;
 }
 
-interface Subtask {
+export interface Subtask {
     id: string;
     title: string;
     completed: boolean;
+}
+
+export interface Comment {
+    id: string;
+    content: string;
+    userId: string;
+    createdAt: Date;
+    user?: {
+        email: string;
+    };
 }
 
 export type TaskWithRelations = {
@@ -28,12 +37,7 @@ export type TaskWithRelations = {
     assignees?: Assignee[];
     subtasks?: Subtask[];
     dueDate?: Date;
-    comments?: {
-        id: string;
-        content: string;
-        userId: string;
-        createdAt: Date;
-    }[];
+    comments?: Comment[];
 };
 
 export async function getTasks(organizationId: string): Promise<TaskWithRelations[]> {
@@ -49,7 +53,7 @@ export async function getTasks(organizationId: string): Promise<TaskWithRelation
     }
 }
 
-export async function updateTaskStatus(taskId: string, status: KanbanColumn) {
+export async function updateTaskStatus(taskId: string, status: KanbanColumn): Promise<TaskWithRelations> {
     try {
         const response = await fetch(`/api/tasks/${taskId}`, {
             method: 'PATCH',
@@ -92,6 +96,25 @@ export async function createTask(data: {
     }
 }
 
+export async function updateTask(taskId: string, updates: Partial<TaskWithRelations>): Promise<TaskWithRelations> {
+    try {
+        const response = await fetch(`/api/tasks/${taskId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updates),
+        })
+        if (!response.ok) {
+            throw new Error('Failed to update task')
+        }
+        return response.json()
+    } catch (error) {
+        console.error('Error in updateTask:', error)
+        throw error
+    }
+}
+
 export function groupTasksByStatus(tasks: TaskWithRelations[]): Record<KanbanColumn, TaskWithRelations[]> {
     const columns: Record<KanbanColumn, TaskWithRelations[]> = {
         todo: [],
@@ -102,37 +125,23 @@ export function groupTasksByStatus(tasks: TaskWithRelations[]): Record<KanbanCol
 
     tasks.forEach(task => {
         if (task.status in columns) {
-            columns[task.status as KanbanColumn].push(task)
+            columns[task.status].push(task)
         }
     })
 
     return columns
 }
 
-export const COLUMN_TITLES: Record<KanbanColumn, string> = {
-    todo: 'Backlog',
-    in_progress: 'Working on',
-    in_review: 'Blocked',
-    done: 'Complete',
-}
+export const COLUMN_TITLES: Record<string, KanbanColumn> = {
+    'TO DO': 'todo',
+    'WORKING ON': 'in_progress',
+    'FOR REVIEW': 'in_review',
+    'COMPLETE': 'done',
+} as const;
 
-export async function updateTask(taskId: string, updates: Partial<TaskWithRelations>): Promise<TaskWithRelations> {
-    try {
-        const response = await fetch(`/api/tasks/${taskId}`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(updates),
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to update task');
-        }
-
-        return response.json();
-    } catch (error) {
-        console.error('Error updating task:', error);
-        throw error;
-    }
-} 
+export const COLUMN_DISPLAY_TITLES: Record<KanbanColumn, string> = {
+    todo: 'TO DO',
+    in_progress: 'WORKING ON',
+    in_review: 'FOR REVIEW',
+    done: 'COMPLETE',
+} as const; 

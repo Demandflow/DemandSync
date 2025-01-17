@@ -1,29 +1,24 @@
-import React from 'react'
-import { ClerkProvider } from '@clerk/nextjs'
-import { Inter } from 'next/font/google'
-import './globals.css'
+'use client';
 
-const inter = Inter({ subsets: ['latin'] })
+import './globals.css';
+import { Inter } from 'next/font/google';
+import { ClerkProvider } from '@clerk/nextjs';
 
-export const metadata = {
-    title: 'DemandSync - Client Portal',
-    description: 'Real-time client portal synchronized with ClickUp',
-}
+const inter = Inter({ subsets: ['latin'] });
 
 export default function RootLayout({
     children,
 }: {
-    children: React.ReactNode
+    children: React.ReactNode;
 }) {
     return (
-        <html lang="en">
-            <ClerkProvider>
+        <ClerkProvider>
+            <html lang="en">
                 <body className={inter.className}>
-                    <main className="min-h-screen bg-gray-50">
-                        {children}
-                    </main>
+                    <div id="modal-root" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 9999 }} />
+                    {children}
                 </body>
-            </ClerkProvider>
-        </html>
-    )
+            </html>
+        </ClerkProvider>
+    );
 } 
