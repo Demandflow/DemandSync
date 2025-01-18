@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { TaskWithRelations } from '@/lib/task-manager';
 import { X, Send, Calendar, Users, Flag } from 'lucide-react';
+import { RichTextEditor } from './RichTextEditor';
 
 interface TaskDetailModalProps {
     taskId: string | null;
@@ -46,6 +47,12 @@ export function TaskDetailModal({ taskId, isOpen, onClose, onUpdate }: TaskDetai
         e.preventDefault();
         // TODO: Implement comment submission
         setComment('');
+    };
+
+    const handleDescriptionChange = async (html: string) => {
+        if (taskId && task) {
+            await onUpdate(taskId, { ...task, description: html });
+        }
     };
 
     if (!mounted || typeof window === 'undefined' || !isOpen) return null;
@@ -126,9 +133,11 @@ export function TaskDetailModal({ taskId, isOpen, onClose, onUpdate }: TaskDetai
                                     <div className="space-y-3 flex-grow">
                                         <h3 className="text-sm font-display font-semibold text-gray-500">Description</h3>
                                         <div className="bg-gray-50 rounded-lg p-6 min-h-[200px]">
-                                            <p className="text-base text-gray-600 whitespace-pre-wrap font-regular">
-                                                {task.description || 'No description provided.'}
-                                            </p>
+                                            <RichTextEditor
+                                                content={task.description || ''}
+                                                onChange={handleDescriptionChange}
+                                                editable={!loading}
+                                            />
                                         </div>
                                     </div>
                                 </div>

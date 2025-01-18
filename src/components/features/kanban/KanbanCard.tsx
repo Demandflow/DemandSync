@@ -3,6 +3,16 @@
 import React from 'react';
 import type { TaskWithRelations } from '@/lib/task-manager';
 
+// Helper function to strip HTML tags and decode entities, adding spaces between text segments
+function stripHtml(html: string) {
+  // First replace HTML tags that should have spaces with spaces
+  const withSpaces = html.replace(/<\/(p|div|br)>/gi, ' ');
+  // Parse and get text content
+  const doc = new DOMParser().parseFromString(withSpaces, 'text/html');
+  // Replace any sequence of whitespace (including newlines) with a single space
+  return (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
 interface KanbanCardProps {
   task: TaskWithRelations;
   index: number;
@@ -45,7 +55,7 @@ export default function KanbanCard({ task, index, onTaskClick }: KanbanCardProps
         </div>
 
         {task.description && (
-          <p className="text-sm text-gray-600 line-clamp-2">{task.description}</p>
+          <p className="text-sm text-gray-600 line-clamp-2">{stripHtml(task.description)}</p>
         )}
 
         <div className="flex items-center justify-between text-xs text-gray-500">

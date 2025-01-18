@@ -11,6 +11,7 @@ module.exports = {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         display: ['Inter Display', 'sans-serif'],
+        mono: ['Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'monospace'],
       },
       colors: {
         primary: {
@@ -25,8 +26,68 @@ module.exports = {
           800: '#075985',
           900: '#0c4a6e',
         },
+        code: {
+          bg: '#1e1e1e',
+          text: '#d4d4d4',
+        },
+      },
+      typography: {
+        DEFAULT: {
+          css: {
+            maxWidth: 'none',
+            color: 'inherit',
+            p: {
+              color: 'inherit',
+            },
+            strong: {
+              color: 'inherit',
+            },
+            a: {
+              color: '#0ea5e9',
+              '&:hover': {
+                color: '#0284c7',
+              },
+            },
+            h1: {
+              color: 'inherit',
+            },
+            h2: {
+              color: 'inherit',
+            },
+            h3: {
+              color: 'inherit',
+            },
+            h4: {
+              color: 'inherit',
+            },
+            pre: {
+              backgroundColor: '#1e1e1e',
+              color: '#d4d4d4',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              code: {
+                backgroundColor: 'transparent',
+                color: 'inherit',
+                fontFamily: 'Monaco, Menlo, Ubuntu Mono, Consolas, monospace',
+                fontSize: '0.875rem',
+                lineHeight: '1.5',
+              },
+            },
+            'ul[data-type="taskList"]': {
+              listStyle: 'none',
+              padding: 0,
+            },
+            'ul[data-type="taskList"] li': {
+              display: 'flex',
+              gap: '0.75rem',
+              alignItems: 'flex-start',
+            },
+          },
+        },
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 } 
