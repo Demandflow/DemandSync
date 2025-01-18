@@ -1,31 +1,32 @@
 import React from 'react'
 import { TaskCard } from './TaskCard'
+import { KanbanColumn, COLUMN_DISPLAY_TITLES } from '@/lib/task-manager'
 
 interface Task {
     id: string
     title: string
     description?: string
-    status: string
+    status: KanbanColumn
 }
 
 interface KanbanBoardProps {
     tasks: Task[]
-    onTaskMove: (taskId: string, newStatus: string) => void
+    onTaskMove: (taskId: string, newStatus: KanbanColumn) => void
     onTaskClick: (taskId: string) => void
 }
 
-const STATUSES = ['todo', 'in_progress', 'in_review', 'done']
+const STATUSES = ['BACKLOG', 'TO_DO', 'ACTIVE_TASK', 'FOR_REVIEW', 'COMPLETE'] as const
 
 export function KanbanBoard({ tasks, onTaskMove, onTaskClick }: KanbanBoardProps) {
-    const handleDragStart = (e: React.DragEvent, taskId: string) => {
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, taskId: string) => {
         e.dataTransfer.setData('taskId', taskId)
     }
 
-    const handleDragOver = (e: React.DragEvent) => {
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault()
     }
 
-    const handleDrop = (e: React.DragEvent, status: string) => {
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>, status: KanbanColumn) => {
         e.preventDefault()
         const taskId = e.dataTransfer.getData('taskId')
         onTaskMove(taskId, status)
@@ -40,8 +41,8 @@ export function KanbanBoard({ tasks, onTaskMove, onTaskClick }: KanbanBoardProps
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, status)}
                 >
-                    <h3 className="text-lg font-medium text-gray-900 mb-4 capitalize">
-                        {status.replace('_', ' ')}
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                        {COLUMN_DISPLAY_TITLES[status]}
                     </h3>
                     <div className="space-y-3">
                         {tasks

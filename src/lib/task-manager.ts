@@ -1,6 +1,6 @@
 import { type JsonValue } from '@prisma/client/runtime/library'
 
-export type KanbanColumn = 'todo' | 'in_progress' | 'in_review' | 'done'
+export type KanbanColumn = 'BACKLOG' | 'TO_DO' | 'ACTIVE_TASK' | 'FOR_REVIEW' | 'COMPLETE'
 
 export interface Assignee {
     id: string;
@@ -117,10 +117,11 @@ export async function updateTask(taskId: string, updates: Partial<TaskWithRelati
 
 export function groupTasksByStatus(tasks: TaskWithRelations[]): Record<KanbanColumn, TaskWithRelations[]> {
     const columns: Record<KanbanColumn, TaskWithRelations[]> = {
-        todo: [],
-        in_progress: [],
-        in_review: [],
-        done: [],
+        BACKLOG: [],
+        TO_DO: [],
+        ACTIVE_TASK: [],
+        FOR_REVIEW: [],
+        COMPLETE: [],
     }
 
     tasks.forEach(task => {
@@ -133,15 +134,17 @@ export function groupTasksByStatus(tasks: TaskWithRelations[]): Record<KanbanCol
 }
 
 export const COLUMN_TITLES: Record<string, KanbanColumn> = {
-    'TO DO': 'todo',
-    'WORKING ON': 'in_progress',
-    'FOR REVIEW': 'in_review',
-    'COMPLETE': 'done',
+    'BACKLOG': 'BACKLOG',
+    'TO DO': 'TO_DO',
+    'ACTIVE TASK': 'ACTIVE_TASK',
+    'FOR REVIEW': 'FOR_REVIEW',
+    'COMPLETE': 'COMPLETE',
 } as const;
 
 export const COLUMN_DISPLAY_TITLES: Record<KanbanColumn, string> = {
-    todo: 'TO DO',
-    in_progress: 'WORKING ON',
-    in_review: 'FOR REVIEW',
-    done: 'COMPLETE',
+    BACKLOG: 'BACKLOG',
+    TO_DO: 'TO DO',
+    ACTIVE_TASK: 'ACTIVE TASK',
+    FOR_REVIEW: 'FOR REVIEW',
+    COMPLETE: 'COMPLETE',
 } as const; 

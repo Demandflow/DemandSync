@@ -1,74 +1,15 @@
-import { TaskWithRelations, KanbanColumn } from './task-manager'
+import { TaskWithRelations, KanbanColumn } from './task-manager';
 
 class MemoryStore {
-    private tasks: Map<string, TaskWithRelations> = new Map()
+    private tasks: Map<string, TaskWithRelations>;
+    private clickupIdIndex: Map<string, string>;
 
     constructor() {
-        // Add some mock data
-        const mockTasks: TaskWithRelations[] = [
-            {
-                id: '1',
-                title: 'GradientFlow Quality of Life Updates',
-                description: 'Implement quality of life improvements for GradientFlow',
-                status: 'todo',
-                organizationId: 'cm60gyvte0000m4lbvz178mmj',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                assignees: [
-                    { id: 'user1', name: 'John Doe', email: 'john@example.com' },
-                    { id: 'user2', name: 'Jane Smith', email: 'jane@example.com' }
-                ],
-                subtasks: [
-                    { id: 'sub1', title: 'Update UI', completed: false },
-                    { id: 'sub2', title: 'Improve performance', completed: false }
-                ],
-                dueDate: new Date('2024-03-15')
-            },
-            {
-                id: '2',
-                title: 'Setup Design Files',
-                description: 'Create and organize design files for the project',
-                status: 'todo',
-                organizationId: 'cm60gyvte0000m4lbvz178mmj',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                assignees: [
-                    { id: 'user3', name: 'Mike Johnson', email: 'mike@example.com' }
-                ],
-                subtasks: [
-                    { id: 'sub3', title: 'Create style guide', completed: false },
-                    { id: 'sub4', title: 'Design components', completed: false }
-                ]
-            },
-            {
-                id: '3',
-                title: 'Cursor Tool Development',
-                description: 'Develop new features for the cursor tool',
-                status: 'todo',
-                organizationId: 'cm60gyvte0000m4lbvz178mmj',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                assignees: [
-                    { id: 'user1', name: 'John Doe', email: 'john@example.com' },
-                    { id: 'user4', name: 'Sarah Wilson', email: 'sarah@example.com' }
-                ]
-            }
-        ]
-
-        mockTasks.forEach(task => {
-            this.tasks.set(task.id, task)
-        })
+        this.tasks = new Map();
+        this.clickupIdIndex = new Map();
     }
 
-    async getTasks(organizationId: string): Promise<TaskWithRelations[]> {
-        return Array.from(this.tasks.values())
-            .filter(task => task.organizationId === organizationId)
-    }
-
-    async getTask(taskId: string): Promise<TaskWithRelations | null> {
-        return this.tasks.get(taskId) || null
-    }
-
+    // Create a new task
     async createTask(data: {
         title: string;
         description?: string;
@@ -82,30 +23,67 @@ class MemoryStore {
             status: data.status,
             organizationId: data.organizationId,
             createdAt: new Date(),
-            updatedAt: new Date()
-        }
+            updatedAt: new Date(),
+        };
 
-        this.tasks.set(task.id, task)
-        return task
+        this.tasks.set(task.id, task);
+        return task;
     }
 
-    async updateTask(taskId: string, updates: Partial<TaskWithRelations>): Promise<TaskWithRelations | null> {
-        const task = this.tasks.get(taskId)
-        if (!task) return null
+    // Update an existing task
+    async updateTask(id: string, updates: Partial<TaskWithRelations>): Promise<TaskWithRelations> {
+        const task = this.tasks.get(id);
+        if (!task) throw new Error('Task not found');
 
-        const updatedTask = {
+        const updated = {
             ...task,
             ...updates,
             updatedAt: new Date()
+        };
+        this.tasks.set(id, updated);
+
+        // Update clickup ID index if it changed
+        if (updates.clickupTaskId && updates.clickupTaskId !== task.clickupTaskId) {
+            if (task.clickupTaskId) {
+                this.clickupIdIndex.delete(task.clickupTaskId);
+            }
+            this.clickupIdIndex.set(updates.clickupTaskId, id);
         }
 
-        this.tasks.set(taskId, updatedTask)
-        return updatedTask
+        return updated;
     }
 
-    async deleteTask(taskId: string): Promise<boolean> {
-        return this.tasks.delete(taskId)
+    // Delete a task
+    async deleteTask(id: string) {
+        const task = this.tasks.get(id);
+        if (!task) return;
+
+        this.tasks.delete(id);
+        if (task.clickupTaskId) {
+            this.clickupIdIndex.delete(task.clickupTaskId);
+        }
+    }
+
+    // Get a task by ID
+    async getTask(id: string): Promise<TaskWithRelations | undefined> {
+        return this.tasks.get(id);
+    }
+
+    // Get all tasks, optionally filtered by organization ID
+    async getTasks(organizationId?: string): Promise<TaskWithRelations[]> {
+        const tasks = Array.from(this.tasks.values());
+        if (organizationId) {
+            return tasks.filter(task => task.organizationId === organizationId);
+        }
+        return tasks;
+    }
+
+    // Find a task by ClickUp ID
+    async findTaskByClickUpId(clickupId: string): Promise<TaskWithRelations | null> {
+        const id = this.clickupIdIndex.get(clickupId);
+        if (!id) return null;
+        return this.tasks.get(id) || null;
     }
 }
 
-export const store = new MemoryStore() 
+export const store = new MemoryStore(); 
