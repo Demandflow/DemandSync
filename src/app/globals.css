@@ -1,10 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import url('https://api.fontshare.com/v2/css?f[]=inter-display@600&display=swap');
+@import 'tippy.js/dist/tippy.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Base styles */
 @layer base {
     html {
         font-family: 'Inter', sans-serif;
@@ -20,91 +22,242 @@
     }
 }
 
+/* Root variables */
 :root {
     --foreground-rgb: 0, 0, 0;
-    --background-start-rgb: 214, 219, 220;
-    --background-end-rgb: 255, 255, 255;
+    --background-rgb: 255, 255, 255;
 }
 
+/* Global styles */
 body {
     color: rgb(var(--foreground-rgb));
-    background: rgb(var(--background-end-rgb));
+    background: rgb(var(--background-rgb));
     height: 100vh;
 }
 
-.kanban-board {
-    @apply flex gap-6 p-6 overflow-x-auto min-h-[calc(100vh-200px)] h-full;
+/* Component styles */
+@layer components {
+
+    /* Kanban board styles */
+    .kanban-board {
+        @apply flex gap-6 p-6 overflow-x-auto min-h-[calc(100vh-200px)] h-full;
+    }
+
+    .kanban-column {
+        @apply min-w-[300px] bg-gray-50 rounded-lg p-4 m-0 h-fit flex-1 flex flex-col;
+    }
+
+    .kanban-column-header {
+        @apply flex items-center gap-2 mb-4;
+    }
+
+    .column-title {
+        @apply text-sm font-semibold text-gray-900;
+    }
+
+    .kanban-column-content {
+        @apply flex-1 overflow-y-auto p-1;
+    }
+
+    .task-card {
+        @apply bg-white rounded-lg p-3 mb-2 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer;
+    }
+
+    .task-card.dragging {
+        @apply scale-105 rotate-1 shadow-lg opacity-90;
+    }
+
+    /* Modal styles */
+    .modal-backdrop {
+        @apply fixed inset-0 bg-black/50 z-50;
+    }
+
+    .modal-container {
+        @apply fixed inset-0 z-50 flex items-center justify-center;
+    }
+
+    .modal-content {
+        @apply bg-white w-full max-w-2xl rounded-lg shadow-2xl overflow-hidden;
+    }
+
+    .modal-header {
+        @apply border-b border-gray-200 px-6 py-4 flex items-center justify-between;
+    }
+
+    .modal-title {
+        @apply text-xl font-semibold text-gray-900;
+    }
+
+    .modal-close {
+        @apply text-gray-400 hover:text-gray-500 p-2 rounded-full hover:bg-gray-100;
+    }
+
+    .modal-body {
+        @apply p-6 space-y-6;
+    }
+
+    .modal-section {
+        @apply space-y-2;
+    }
+
+    .modal-section-title {
+        @apply text-sm font-medium text-gray-900;
+    }
+
+    .modal-text {
+        @apply text-sm text-gray-600;
+    }
+
+    .modal-tag {
+        @apply bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm;
+    }
+
+    .modal-status {
+        @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    }
+
+    /* Editor styles */
+    .ProseMirror {
+        @apply min-h-[300px] p-4 focus:outline-none;
+    }
+
+    /* Task list styles */
+    .ProseMirror ul[data-type="taskList"] {
+        @apply list-none p-0 space-y-2;
+    }
+
+    .ProseMirror ul[data-type="taskList"] li {
+        @apply flex items-start gap-3 bg-gray-50 rounded-lg p-3;
+        list-style: none;
+    }
+
+    .ProseMirror ul[data-type="taskList"] li>label {
+        @apply relative w-5 h-5 flex-shrink-0 mt-0.5;
+    }
+
+    .ProseMirror ul[data-type="taskList"] li>label input[type="checkbox"] {
+        @apply sr-only;
+    }
+
+    /* Unchecked state with hover effect */
+    .ProseMirror ul[data-type="taskList"] li>label::before {
+        content: '';
+        @apply absolute inset-0 border-2 border-gray-300 rounded bg-white transition-all duration-200 hover:border-[#4285f4] hover:shadow-sm;
+    }
+
+    /* Checkmark with animation */
+    .ProseMirror ul[data-type="taskList"] li>label::after {
+        content: '';
+        @apply absolute top-[2px] left-[6px] w-[6px] h-[10px] border-r-2 border-b-2 border-white rotate-45 opacity-0 transition-all duration-200 scale-75;
+    }
+
+    /* Checked states */
+    .ProseMirror ul[data-type="taskList"] li[data-checked="true"]>label::before {
+        @apply bg-[#4285f4] border-[#4285f4] scale-100 shadow-sm;
+    }
+
+    .ProseMirror ul[data-type="taskList"] li[data-checked="true"]>label::after {
+        @apply opacity-100 scale-100;
+    }
+
+    /* Focus state */
+    .ProseMirror ul[data-type="taskList"] li>label input[type="checkbox"]:focus+::before {
+        @apply ring-2 ring-offset-2 ring-[#4285f4]/30;
+    }
+
+    .ProseMirror ul[data-type="taskList"] li>div {
+        @apply flex-1 text-gray-900;
+    }
+
+    .ProseMirror ul[data-type="taskList"] li[data-checked="true"]>div {
+        @apply line-through text-gray-400;
+    }
+
+    /* Code block styles */
+    .ProseMirror pre {
+        @apply bg-[#1e1e1e] rounded-lg p-4 my-4 relative overflow-x-auto;
+    }
+
+    .ProseMirror pre code {
+        @apply text-[#d4d4d4] block font-mono text-sm leading-relaxed;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    }
+
+    /* Other editor styles */
+    .ProseMirror ul[data-type="bulletList"] {
+        @apply list-disc pl-6 mb-4;
+    }
+
+    .ProseMirror ol[data-type="orderedList"] {
+        @apply list-decimal pl-6 mb-4;
+    }
+
+    .ProseMirror blockquote {
+        @apply border-l-4 border-gray-300 pl-4 italic my-4;
+    }
+
+    .ProseMirror .banner {
+        @apply bg-blue-50 border-l-4 border-blue-500 p-4 my-4 rounded-r-lg;
+    }
+
+    /* Editor placeholder */
+    .ProseMirror p.is-editor-empty:first-child::before {
+        @apply text-gray-400 float-left h-0 pointer-events-none;
+        content: attr(data-placeholder);
+    }
 }
 
-.kanban-column {
-    @apply min-w-[300px] bg-gray-50 rounded-lg p-4 m-0 h-fit flex-1 flex flex-col;
+/* Syntax highlighting */
+.hljs {
+    @apply bg-transparent text-[#d4d4d4];
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
 }
 
-.kanban-column-header {
-    @apply flex items-center gap-2 mb-4;
+.hljs-keyword {
+    @apply text-[#569cd6];
 }
 
-.column-title {
-    @apply text-sm font-semibold text-gray-900;
+.hljs-string {
+    @apply text-[#ce9178];
 }
 
-.kanban-column-content {
-    @apply flex-1 overflow-y-auto p-1;
+.hljs-function {
+    @apply text-[#dcdcaa];
 }
 
-.task-card {
-    @apply bg-white rounded-lg p-3 mb-2 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer;
+.hljs-comment {
+    @apply text-[#6a9955];
 }
 
-.task-card.dragging {
-    @apply scale-105 rotate-1 shadow-lg opacity-90;
+.hljs-number {
+    @apply text-[#b5cea8];
 }
 
-/* Modal styles */
-.modal-backdrop {
-    @apply fixed inset-0 bg-black bg-opacity-50 z-50;
+.hljs-operator {
+    @apply text-[#d4d4d4];
 }
 
-.modal-container {
-    @apply fixed inset-0 z-50 flex items-center justify-center;
+.hljs-class {
+    @apply text-[#4ec9b0];
 }
 
-.modal-content {
-    @apply bg-white w-full max-w-2xl rounded-lg shadow-2xl overflow-hidden;
+.hljs-builtin {
+    @apply text-[#4ec9b0];
 }
 
-.modal-header {
-    @apply border-b border-gray-200 px-6 py-4 flex items-center justify-between;
+.hljs-property {
+    @apply text-[#9cdcfe];
 }
 
-.modal-title {
-    @apply text-xl font-semibold text-gray-900;
+.hljs-variable {
+    @apply text-[#9cdcfe];
 }
 
-.modal-close {
-    @apply text-gray-400 hover:text-gray-500 p-2 rounded-full hover:bg-gray-100;
+/* Tippy styles */
+.tippy-box {
+    @apply bg-white rounded-lg shadow-lg border border-gray-200 p-0;
 }
 
-.modal-body {
-    @apply p-6 space-y-6;
-}
-
-.modal-section {
-    @apply space-y-2;
-}
-
-.modal-section-title {
-    @apply text-sm font-medium text-gray-900;
-}
-
-.modal-text {
-    @apply text-sm text-gray-600;
-}
-
-.modal-tag {
-    @apply bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm;
-}
-
-.modal-status {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+.tippy-content {
+    @apply p-0;
 }
